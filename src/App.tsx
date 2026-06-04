@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import CategorySidebar from './components/CategorySidebar';
 import ColorWheelAdvanced from './components/ColorWheelAdvanced';
 import SearchBar from './components/SearchBar';
@@ -10,6 +10,19 @@ import { hsvToRgb, rgbToHex, hexToHsv, rgbToHsv } from './utils/color';
 
 const PAGE_SIZE = 60;
 
+type RgbKey = 'r' | 'g' | 'b';
+type HsvKey = 'h' | 's' | 'v';
+
+function hsvToTextState(h: number, s: number, v: number) {
+  const rgb = hsvToRgb(h, s, v);
+  const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+  return {
+    hex: hex.toUpperCase(),
+    rgb: { r: String(rgb.r), g: String(rgb.g), b: String(rgb.b) } as Record<RgbKey, string>,
+    hsv: { h: String(h), s: String(s), v: String(v) } as Record<HsvKey, string>,
+  };
+}
+
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<ColorCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +32,23 @@ export default function App() {
   const [triadMode, setTriadMode] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Track which input is focused so external updates don't overwrite while typing
+  const [activeInput, setActiveInput] = useState<string | null>(null);
+
+  // Raw text state for editable inputs (allows empty while typing)
+  const init = hsvToTextState(0, 100, 100);
+  const [hexText, setHexText] = useState(init.hex);
+  const [rgbText, setRgbText] = useState(init.rgb);
+  const [hsvText, setHsvText] = useState(init.hsv);
+
+  // Sync text from HSV state when wheel changes (skip if user is typing in that field)
+  useEffect(() => {
+    const t = hsvToTextState(hue, saturation, brightness);
+    if (activeInput !== 'hex') setHexText(t.hex);
+    if (activeInput !== 'rgb') setRgbText(t.rgb);
+    if (activeInput !== 'hsv') setHsvText(t.hsv);
+  }, [hue, saturation, brightness, activeInput]);
 
   const activeCategory = selectedCategory || 'pastel';
 
@@ -44,7 +74,6 @@ export default function App() {
 
   const hasMore = visibleCount < filteredPalettes.length;
 
-  // Derived color values from HSV state
   const currentRgb = hsvToRgb(hue, saturation, brightness);
   const currentHex = rgbToHex(currentRgb.r, currentRgb.g, currentRgb.b);
 
@@ -54,11 +83,11 @@ export default function App() {
     return rgbToHex(rgb.r, rgb.g, rgb.b);
   });
 
-  // Input handlers
-  const handleHexInput = (value: string) => {
-    const clean = value.trim();
-    if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
-      const hsv = hexToHsv(clean);
+  // HEX input: free typing, commit valid hex on change
+  const handleHexChange = (value: string) => {
+    setHexText(value);
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+      const hsv = hexToHsv(value);
       if (hsv) {
         setHue(hsv.h);
         setSaturation(hsv.s);
@@ -67,36 +96,49 @@ export default function App() {
     }
   };
 
-  const handleRgbInput = (channel: 'r' | 'g' | 'b', value: string) => {
-    const num = parseInt(value) || 0;
+  const handleHexBlur = () => {
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hexText)) {
+      setHexText(currentHex.toUpperCase());
+    }
+  };
+
+  // RGB inputs: free typing, commit on blur
+  const handleRgbChange = (ch: RgbKey, value: string) => {
+    setRgbText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') }));
+  };
+
+  const handleRgbBlur = (ch: RgbKey) => {
+    const num = parseInt(rgbText[ch]) || 0;
     const clamped = Math.max(0, Math.min(255, num));
-    const r = channel === 'r' ? clamped : currentRgb.r;
-    const g = channel === 'g' ? clamped : currentRgb.g;
-    const b = channel === 'b' ? clamped : currentRgb.b;
+    setRgbText(prev => ({ ...prev, [ch]: String(clamped) }));
+    const r = ch === 'r' ? clamped : currentRgb.r;
+    const g = ch === 'g' ? clamped : currentRgb.g;
+    const b = ch === 'b' ? clamped : currentRgb.b;
     const hsv = rgbToHsv(r, g, b);
     setHue(hsv.h);
     setSaturation(hsv.s);
     setBrightness(hsv.v);
   };
 
-  const handleHsvInput = (channel: 'h' | 's' | 'v', value: string) => {
-    const num = parseInt(value) || 0;
-    if (channel === 'h') setHue(Math.max(0, Math.min(360, num)));
-    if (channel === 's') setSaturation(Math.max(0, Math.min(100, num)));
-    if (channel === 'v') setBrightness(Math.max(0, Math.min(100, num)));
+  // HSV inputs: free typing, commit on blur
+  const handleHsvChange = (ch: HsvKey, value: string) => {
+    setHsvText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') }));
   };
 
-  const handleWheelHueChange = useCallback((newHue: number) => {
-    setHue(newHue);
-  }, []);
+  const handleHsvBlur = (ch: HsvKey) => {
+    const maxVal = ch === 'h' ? 360 : 100;
+    const num = parseInt(hsvText[ch]) || 0;
+    const clamped = Math.max(0, Math.min(maxVal, num));
+    setHsvText(prev => ({ ...prev, [ch]: String(clamped) }));
+    if (ch === 'h') setHue(clamped);
+    if (ch === 's') setSaturation(clamped);
+    if (ch === 'v') setBrightness(clamped);
+  };
 
-  const handleWheelSaturationChange = useCallback((newSaturation: number) => {
-    setSaturation(newSaturation);
-  }, []);
-
-  const handleWheelBrightnessChange = useCallback((newBrightness: number) => {
-    setBrightness(newBrightness);
-  }, []);
+  // Wheel callbacks
+  const handleWheelHueChange = useCallback((newHue: number) => setHue(newHue), []);
+  const handleWheelSaturationChange = useCallback((newSat: number) => setSaturation(newSat), []);
+  const handleWheelBrightnessChange = useCallback((newBri: number) => setBrightness(newBri), []);
 
   const handleCategorySelect = useCallback((cat: ColorCategory | null) => {
     setSelectedCategory(cat);
@@ -104,14 +146,16 @@ export default function App() {
     setSearchQuery('');
   }, []);
 
-  // Palette card: only copy to clipboard, do NOT update color picker
-  const handleColorCopy = () => {
+  const handleColorCopy = useCallback(() => {
     setToastMessage('Copied to clipboard!');
-  };
+  }, []);
 
   const currentCategoryLabel = selectedCategory
-    ? PALETTE_CATEGORIES.find((c) => c.id === selectedCategory)?.label
+    ? PALETTE_CATEGORIES.find(c => c.id === selectedCategory)?.label
     : 'All';
+
+  const inputCls = `w-full bg-gray-800 border border-gray-700 text-gray-300 font-mono text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent`;
+  const hsvCls = `w-full bg-gray-800 border border-gray-700 text-sky-400 font-mono text-sm px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-center`;
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950" style={{ backgroundColor: '#0b131f' }}>
@@ -122,10 +166,7 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Color Wheel Section */}
             <div className="lg:col-span-1">
-              <div
-                className="border border-gray-800 rounded-2xl p-6"
-                style={{ backgroundColor: '#121e30' }}
-              >
+              <div className="border border-gray-800 rounded-2xl p-6" style={{ backgroundColor: '#121e30' }}>
                 <h2 className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-5">
                   Selector de color
                 </h2>
@@ -135,9 +176,7 @@ export default function App() {
                   <button
                     onClick={() => setTriadMode(false)}
                     className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
-                      !triadMode
-                        ? 'bg-sky-500/20 text-sky-300'
-                        : 'text-gray-400 hover:text-gray-200'
+                      !triadMode ? 'bg-sky-500/20 text-sky-300' : 'text-gray-400 hover:text-gray-200'
                     }`}
                   >
                     Single Color
@@ -145,9 +184,7 @@ export default function App() {
                   <button
                     onClick={() => setTriadMode(true)}
                     className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
-                      triadMode
-                        ? 'bg-sky-500/20 text-sky-300'
-                        : 'text-gray-400 hover:text-gray-200'
+                      triadMode ? 'bg-sky-500/20 text-sky-300' : 'text-gray-400 hover:text-gray-200'
                     }`}
                   >
                     Triad (3 Colors)
@@ -169,10 +206,7 @@ export default function App() {
                   <div className="mt-4 flex gap-2">
                     {triadColors.map((color, i) => (
                       <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <div
-                          className="w-full h-8 rounded-lg border border-gray-700"
-                          style={{ backgroundColor: color }}
-                        />
+                        <div className="w-full h-8 rounded-lg border border-gray-700" style={{ backgroundColor: color }} />
                         <span className="text-xs font-mono text-gray-400">{color.toUpperCase()}</span>
                       </div>
                     ))}
@@ -183,78 +217,49 @@ export default function App() {
 
             {/* Info Panels */}
             <div className="lg:col-span-2 space-y-4">
-              {/*Codigo del color */}
-              <div
-                className="border border-gray-800 rounded-2xl p-6"
-                style={{ backgroundColor: '#121e30' }}
-              >
+              {/* Codigo del color */}
+              <div className="border border-gray-800 rounded-2xl p-6" style={{ backgroundColor: '#121e30' }}>
                 <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-4">
                   Codigo del color
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div
                     className="h-24 rounded-xl shadow-lg border-2"
-                    style={{
-                      backgroundColor: currentHex,
-                      borderColor: `${currentHex}40`,
-                    }}
+                    style={{ backgroundColor: currentHex, borderColor: `${currentHex}40` }}
                   />
                   <div className="space-y-2">
                     <div>
-                      <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-                        HEX
-                      </label>
+                      <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">HEX</label>
                       <input
                         type="text"
-                        value={currentHex.toUpperCase()}
-                        onChange={(e) => handleHexInput(e.target.value)}
+                        value={hexText}
+                        onChange={e => handleHexChange(e.target.value)}
+                        onFocus={() => setActiveInput('hex')}
+                        onBlur={() => { setActiveInput(null); handleHexBlur(); }}
                         className="w-full bg-gray-800 border border-gray-700 text-sky-400 font-mono text-sm px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-                        RGB
-                      </label>
+                      <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">RGB</label>
                       <div className="flex gap-1.5">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-red-400 font-bold">R</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="255"
-                              value={currentRgb.r}
-                              onChange={(e) => handleRgbInput('r', e.target.value)}
-                              className="w-full bg-gray-800 border border-gray-700 text-gray-300 font-mono text-xs px-2 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
+                        {(['r', 'g', 'b'] as RgbKey[]).map(ch => (
+                          <div key={ch} className="flex-1">
+                            <div className="flex items-center gap-1">
+                              <span className={`text-xs font-bold ${ch === 'r' ? 'text-red-400' : ch === 'g' ? 'text-green-400' : 'text-blue-400'}`}>
+                                {ch.toUpperCase()}
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={rgbText[ch]}
+                                onChange={e => handleRgbChange(ch, e.target.value)}
+                                onFocus={() => setActiveInput('rgb')}
+                                onBlur={() => { setActiveInput(null); handleRgbBlur(ch); }}
+                                className={inputCls}
+                              />
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-green-400 font-bold">G</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="255"
-                              value={currentRgb.g}
-                              onChange={(e) => handleRgbInput('g', e.target.value)}
-                              className="w-full bg-gray-800 border border-gray-700 text-gray-300 font-mono text-xs px-2 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-blue-400 font-bold">B</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="255"
-                              value={currentRgb.b}
-                              onChange={(e) => handleRgbInput('b', e.target.value)}
-                              className="w-full bg-gray-800 border border-gray-700 text-gray-300 font-mono text-xs px-2 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -262,58 +267,52 @@ export default function App() {
               </div>
 
               {/* HSV Values */}
-              <div
-                className="border border-gray-800 rounded-2xl p-6"
-                style={{ backgroundColor: '#121e30' }}
-              >
+              <div className="border border-gray-800 rounded-2xl p-6" style={{ backgroundColor: '#121e30' }}>
                 <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-4">
                   Valores HSV
                 </h3>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-                      Matiz (H)
-                    </label>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">Matiz (H)</label>
                     <div className="flex items-center gap-1">
                       <input
-                        type="number"
-                        min="0"
-                        max="360"
-                        value={hue}
-                        onChange={(e) => handleHsvInput('h', e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 text-sky-400 font-mono text-sm px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        type="text"
+                        inputMode="numeric"
+                        value={hsvText.h}
+                        onChange={e => handleHsvChange('h', e.target.value)}
+                        onFocus={() => setActiveInput('hsv')}
+                        onBlur={() => { setActiveInput(null); handleHsvBlur('h'); }}
+                        className={hsvCls}
                       />
                       <span className="text-xs text-gray-500">°</span>
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-                      Saturacion (S)
-                    </label>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">Saturacion (S)</label>
                     <div className="flex items-center gap-1">
                       <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={saturation}
-                        onChange={(e) => handleHsvInput('s', e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 text-sky-400 font-mono text-sm px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        type="text"
+                        inputMode="numeric"
+                        value={hsvText.s}
+                        onChange={e => handleHsvChange('s', e.target.value)}
+                        onFocus={() => setActiveInput('hsv')}
+                        onBlur={() => { setActiveInput(null); handleHsvBlur('s'); }}
+                        className={hsvCls}
                       />
                       <span className="text-xs text-gray-500">%</span>
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-                      Valor (V)
-                    </label>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-1">Valor (V)</label>
                     <div className="flex items-center gap-1">
                       <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={brightness}
-                        onChange={(e) => handleHsvInput('v', e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 text-sky-400 font-mono text-sm px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        type="text"
+                        inputMode="numeric"
+                        value={hsvText.v}
+                        onChange={e => handleHsvChange('v', e.target.value)}
+                        onFocus={() => setActiveInput('hsv')}
+                        onBlur={() => { setActiveInput(null); handleHsvBlur('v'); }}
+                        className={hsvCls}
                       />
                       <span className="text-xs text-gray-500">%</span>
                     </div>
@@ -342,12 +341,8 @@ export default function App() {
           {displayedPalettes.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-                {displayedPalettes.map((palette) => (
-                  <PaletteCard
-                    key={palette.id}
-                    palette={palette}
-                    onColorCopy={handleColorCopy}
-                  />
+                {displayedPalettes.map(palette => (
+                  <PaletteCard key={palette.id} palette={palette} onColorCopy={handleColorCopy} />
                 ))}
               </div>
               {hasMore && (
