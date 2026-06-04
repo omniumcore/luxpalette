@@ -1,12 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import CategorySidebar from './components/CategorySidebar';
 import ColorWheelAdvanced from './components/ColorWheelAdvanced';
 import SearchBar from './components/SearchBar';
 import PaletteCard from './components/PaletteCard';
 import ToastNotification from './components/ToastNotification';
-import { getPalettesByFilters } from './utils/paletteSearch';
+import { generatePalettes } from './data/palettes';
 import { type ColorCategory, PALETTE_CATEGORIES } from './data/palettes';
 import { hsvToRgb, rgbToHex, hexToHsv, rgbToHsv } from './utils/color';
+
+const PAGE_SIZE = 60;
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<ColorCategory | null>(null);
@@ -16,8 +18,31 @@ export default function App() {
   const [brightness, setBrightness] = useState(100);
   const [triadMode, setTriadMode] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const filteredPalettes = getPalettesByFilters(searchQuery, selectedCategory);
+  const activeCategory = selectedCategory || 'pastel';
+
+  const allPalettes = useMemo(
+    () => generatePalettes(activeCategory, 500),
+    [activeCategory]
+  );
+
+  const filteredPalettes = useMemo(() => {
+    if (!searchQuery.trim()) return allPalettes;
+    const q = searchQuery.toLowerCase().trim();
+    return allPalettes.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.tags.some(t => t.toLowerCase().includes(q)) ||
+      p.colors.some(c => c.toLowerCase().includes(q))
+    );
+  }, [allPalettes, searchQuery]);
+
+  const displayedPalettes = useMemo(
+    () => filteredPalettes.slice(0, visibleCount),
+    [filteredPalettes, visibleCount]
+  );
+
+  const hasMore = visibleCount < filteredPalettes.length;
 
   // Derived color values from HSV state
   const currentRgb = hsvToRgb(hue, saturation, brightness);
@@ -73,6 +98,12 @@ export default function App() {
     setBrightness(newBrightness);
   }, []);
 
+  const handleCategorySelect = useCallback((cat: ColorCategory | null) => {
+    setSelectedCategory(cat);
+    setVisibleCount(PAGE_SIZE);
+    setSearchQuery('');
+  }, []);
+
   // Palette card: only copy to clipboard, do NOT update color picker
   const handleColorCopy = () => {
     setToastMessage('Copied to clipboard!');
@@ -84,7 +115,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950" style={{ backgroundColor: '#0b131f' }}>
-      <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
+      <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-6 py-8">
@@ -294,29 +325,42 @@ export default function App() {
 
           {/* Search Bar */}
           <div className="mb-6">
-            <SearchBar value={searchQuery} onChange={setSearchQuery} />
+            <SearchBar value={searchQuery} onChange={(q) => { setSearchQuery(q); setVisibleCount(PAGE_SIZE); }} />
           </div>
 
           {/* Grid Info */}
           <div className="mb-4">
             <p className="text-sm text-gray-400">
-              Showing <span className="font-semibold text-sky-400">{filteredPalettes.length}</span> palette
+              Showing <span className="font-semibold text-sky-400">{displayedPalettes.length}</span> of{' '}
+              <span className="font-semibold text-sky-400">{filteredPalettes.length}</span> palette
               {filteredPalettes.length !== 1 ? 's' : ''} ({filteredPalettes.length * 5} colors total) from{' '}
               <span className="font-semibold text-sky-400">{currentCategoryLabel}</span>
             </p>
           </div>
 
           {/* Palette Grid */}
-          {filteredPalettes.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-12">
-              {filteredPalettes.map((palette) => (
-                <PaletteCard
-                  key={palette.id}
-                  palette={palette}
-                  onColorCopy={handleColorCopy}
-                />
-              ))}
-            </div>
+          {displayedPalettes.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+                {displayedPalettes.map((palette) => (
+                  <PaletteCard
+                    key={palette.id}
+                    palette={palette}
+                    onColorCopy={handleColorCopy}
+                  />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center mb-12">
+                  <button
+                    onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                    className="px-6 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 text-sm font-medium rounded-lg border border-sky-500/30 transition-all"
+                  >
+                    Load More ({filteredPalettes.length - visibleCount} remaining)
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
               <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
