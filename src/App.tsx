@@ -146,8 +146,8 @@ export default function App() {
     setSearchQuery('');
   }, []);
 
-  const handleColorCopy = useCallback(() => {
-    setToastMessage('Copied to clipboard!');
+  const handleColorCopy = useCallback((message: string) => {
+    setToastMessage(message);
   }, []);
 
   const currentCategoryLabel = selectedCategory
