@@ -2,7 +2,6 @@ import { PALETTES, type Palette, type ColorCategory } from '../data/palettes';
 
 export function searchPalettes(query: string): Palette[] {
   if (!query.trim()) return PALETTES;
-
   const q = query.toLowerCase().trim();
   return PALETTES.filter((palette) => {
     if (palette.name.toLowerCase().includes(q)) return true;
@@ -37,25 +36,4 @@ export function getPalettesByFilters(search: string, category: ColorCategory | n
   }
 
   return filtered;
-}
-
-export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
-}
-
-export function getLuminance(hex: string): number {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0.5;
-  return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-}
-
-export function isLightColor(hex: string): boolean {
-  return getLuminance(hex) > 0.5;
 }

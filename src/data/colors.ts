@@ -1,4 +1,4 @@
-import { ColorFamily } from '../types';
+import { ColorFamily, ColorShade } from '../types';
 
 export const COLOR_FAMILIES: ColorFamily[] = [
   {
