@@ -161,6 +161,24 @@ export default function App() {
             <LanguageToggle />
           </div>
 
+          {/* LuxPalette Brand Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex gap-0.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                </div>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  <span className="text-white">Lux</span>
+                  <span className="bg-gradient-to-r from-sky-400 via-violet-400 to-rose-400 bg-clip-text text-transparent">Palette</span>
+                </h1>
+              </div>
+              <p className="text-xs text-gray-500 mt-1 tracking-wide">{t('tagline')}</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Color Wheel Section */}
             <div className="lg:col-span-1">

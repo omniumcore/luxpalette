@@ -74,6 +74,12 @@ const translations = {
   localPaymentMX: { es: 'Pago Local México', en: 'Local Payment Mexico' },
   mercadoPagoSPEI: { es: 'Mercado Pago / SPEI / OXXO', en: 'Mercado Pago / SPEI / OXXO' },
   contributionThanks: { es: 'Cada contribución ayuda a mantener esta herramienta gratuita y sin anuncios.', en: 'Every contribution helps keep this tool free and ad-free.' },
+
+  // Tagline
+  tagline: { es: 'Generador de 500 Paletas & Rueda de Tríadas', en: '500 Palette Generator & Triad Color Wheel' },
+
+  // Author credits
+  authorCredits: { es: 'Creado por Ancient of Light | OmniumCore', en: 'Created by Ancient of Light | OmniumCore' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

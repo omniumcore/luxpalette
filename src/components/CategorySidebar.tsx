@@ -52,6 +52,9 @@ export default function CategorySidebar({ selectedCategory, onSelectCategory, on
           <Coffee size={14} />
           <span>{t('coffeeButton')}</span>
         </button>
+        <p className="text-[10px] text-gray-600 text-center mt-2.5 leading-tight">
+          {t('authorCredits')}
+        </p>
       </div>
     </aside>
   );
