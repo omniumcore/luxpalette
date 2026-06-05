@@ -1,3 +1,14 @@
+/*
+  ========================================================================
+  CORE ARCHITECTURE & AUTHORSHIP REGISTRATION
+  Lead System Engineer: Ancient of Light
+  Production Label: OmniumCore
+  
+  This software logic is fully protected under the official MIT License. 
+  Any unauthorized distribution or claim of ownership without maintaining 
+  original developer credits is strictly prohibited by digital copyright law.
+  ========================================================================
+*/
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import CategorySidebar from './components/CategorySidebar';
 import ColorWheelAdvanced from './components/ColorWheelAdvanced';
