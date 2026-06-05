@@ -4,6 +4,7 @@ import ColorWheelAdvanced from './components/ColorWheelAdvanced';
 import SearchBar from './components/SearchBar';
 import PaletteCard from './components/PaletteCard';
 import ToastNotification from './components/ToastNotification';
+import DonationModal from './components/DonationModal';
 import { generatePalettes } from './data/palettes';
 import { type ColorCategory, PALETTE_CATEGORIES } from './data/palettes';
 import { hsvToRgb, rgbToHex, hexToHsv, rgbToHsv } from './utils/color';
@@ -32,6 +33,7 @@ export default function App() {
   const [triadMode, setTriadMode] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [donationOpen, setDonationOpen] = useState(false);
 
   // Track which input is focused so external updates don't overwrite while typing
   const [activeInput, setActiveInput] = useState<string | null>(null);
@@ -159,7 +161,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950" style={{ backgroundColor: '#0b131f' }}>
-      <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} />
+      <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} onCoffeeClick={() => setDonationOpen(true)} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-6 py-8">
@@ -373,6 +375,7 @@ export default function App() {
       </main>
 
       {toastMessage && <ToastNotification message={toastMessage} />}
+      <DonationModal isOpen={donationOpen} onClose={() => setDonationOpen(false)} />
     </div>
   );
 }

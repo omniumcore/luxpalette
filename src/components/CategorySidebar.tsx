@@ -4,9 +4,10 @@ import { PALETTE_CATEGORIES, type ColorCategory } from '../data/palettes';
 interface CategorySidebarProps {
   selectedCategory: ColorCategory | null;
   onSelectCategory: (category: ColorCategory | null) => void;
+  onCoffeeClick: () => void;
 }
 
-export default function CategorySidebar({ selectedCategory, onSelectCategory }: CategorySidebarProps) {
+export default function CategorySidebar({ selectedCategory, onSelectCategory, onCoffeeClick }: CategorySidebarProps) {
   return (
     <aside className="w-40 shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col h-full">
       <div className="px-4 py-5 border-b border-gray-800">
@@ -40,15 +41,13 @@ export default function CategorySidebar({ selectedCategory, onSelectCategory }: 
       </nav>
 
       <div className="px-3 py-3 border-t border-gray-800" style={{ backgroundColor: '#121e30' }}>
-        <a
-          href="https://buymeacoffee.com"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={onCoffeeClick}
           className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all duration-150"
         >
           <Coffee size={14} />
           <span>Buy me a coffee</span>
-        </a>
+        </button>
       </div>
     </aside>
   );
