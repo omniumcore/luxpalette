@@ -1,4 +1,5 @@
 import { X, Coffee, CreditCard, Landmark } from 'lucide-react';
+import { useLang } from '../i18n/LanguageContext';
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -6,6 +7,8 @@ interface DonationModalProps {
 }
 
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
+  const { t } = useLang();
+
   if (!isOpen) return null;
 
   return (
@@ -13,16 +16,13 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      {/* Backdrop with blur */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
 
-      {/* Modal */}
       <div
         className="relative w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200"
         style={{ backgroundColor: '#121e30' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-colors"
@@ -30,20 +30,17 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
           <X size={18} />
         </button>
 
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
             <Coffee size={20} className="text-amber-400" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-100">Support This Project</h2>
-            <p className="text-xs text-gray-400">Choose your preferred payment method</p>
+            <h2 className="text-base font-semibold text-gray-100">{t('supportProject')}</h2>
+            <p className="text-xs text-gray-400">{t('choosePayment')}</p>
           </div>
         </div>
 
-        {/* Donation options */}
         <div className="space-y-3">
-          {/* PayPal / Credit Card */}
           <a
             href="https://paypal.me"
             target="_blank"
@@ -55,16 +52,15 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-amber-300 group-hover:text-amber-200 transition-colors">
-                International Support
+                {t('internationalSupport')}
               </div>
-              <div className="text-xs text-gray-400">PayPal / Credit Card</div>
+              <div className="text-xs text-gray-400">{t('paypalCredit')}</div>
             </div>
             <svg className="w-4 h-4 text-amber-400/50 group-hover:text-amber-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
 
-          {/* Mercado Pago */}
           <a
             href="https://mpago.li"
             target="_blank"
@@ -76,9 +72,9 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-sky-300 group-hover:text-sky-200 transition-colors">
-                Pago Local México
+                {t('localPaymentMX')}
               </div>
-              <div className="text-xs text-gray-400">Mercado Pago / SPEI / OXXO</div>
+              <div className="text-xs text-gray-400">{t('mercadoPagoSPEI')}</div>
             </div>
             <svg className="w-4 h-4 text-sky-400/50 group-hover:text-sky-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -87,7 +83,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         </div>
 
         <p className="text-xs text-gray-500 text-center mt-5">
-          Every contribution helps keep this tool free and ad-free.
+          {t('contributionThanks')}
         </p>
       </div>
     </div>

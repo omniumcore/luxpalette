@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLang } from '../i18n/LanguageContext';
 
 interface ColorWheelAdvancedProps {
   hue: number;
@@ -19,6 +20,7 @@ export default function ColorWheelAdvanced({
   onSaturationChange,
   onBrightnessChange,
 }: ColorWheelAdvancedProps) {
+  const { t } = useLang();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const size = 280;
@@ -248,7 +250,7 @@ export default function ColorWheelAdvanced({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-gray-300 uppercase tracking-wider">BRILLO</label>
+          <label className="text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('brightness').toUpperCase()}</label>
           <span className="text-xs font-mono text-sky-400">{brightness}%</span>
         </div>
         <div

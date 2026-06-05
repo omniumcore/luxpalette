@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Palette } from '../data/palettes';
 import { hexToRgb, rgbToHsv, getColorName } from '../utils/color';
+import { useLang } from '../i18n/LanguageContext';
 
 interface PaletteCardProps {
   palette: Palette;
@@ -8,14 +9,15 @@ interface PaletteCardProps {
 }
 
 function ColorRow({ hex, onColorCopy }: { hex: string; onColorCopy: (msg: string) => void }) {
+  const { t } = useLang();
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const rgb = hexToRgb(hex);
   const hsv = rgb ? rgbToHsv(rgb.r, rgb.g, rgb.b) : null;
   const name = getColorName(hex);
 
-  const copy = (text: string, type: string) => {
+  const copy = (text: string, type: string, toastKey: 'copiedHEX' | 'copiedRGB' | 'copiedHSV') => {
     navigator.clipboard.writeText(text);
-    onColorCopy(`Copied ${type}!`);
+    onColorCopy(t(toastKey));
     setCopiedType(type);
     setTimeout(() => setCopiedType(null), 800);
   };
@@ -25,17 +27,19 @@ function ColorRow({ hex, onColorCopy }: { hex: string; onColorCopy: (msg: string
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded px-2 py-1.5 space-y-0.5">
-      <div className="text-xs text-gray-500 truncate">{name}</div>
-      <button onClick={() => copy(hex.toUpperCase(), 'HEX')} className={`${lineBase} ${activeCls('HEX')} block w-full text-left`}>
+      <div className="text-xs text-gray-500 truncate">
+        <span className="text-gray-600 mr-1">{t('labelName')}</span>{name}
+      </div>
+      <button onClick={() => copy(hex.toUpperCase(), 'HEX', 'copiedHEX')} className={`${lineBase} ${activeCls('HEX')} block w-full text-left`}>
         <span className="text-gray-600 mr-1">HEX:</span>{hex.toUpperCase()}
       </button>
       {rgb && (
-        <button onClick={() => copy(`${rgb.r}, ${rgb.g}, ${rgb.b}`, 'RGB')} className={`${lineBase} ${activeCls('RGB')} block w-full text-left`}>
+        <button onClick={() => copy(`${rgb.r}, ${rgb.g}, ${rgb.b}`, 'RGB', 'copiedRGB')} className={`${lineBase} ${activeCls('RGB')} block w-full text-left`}>
           <span className="text-gray-600 mr-1">RGB:</span>{rgb.r}, {rgb.g}, {rgb.b}
         </button>
       )}
       {hsv && (
-        <button onClick={() => copy(`${hsv.h}, ${hsv.s}, ${hsv.v}`, 'HSV')} className={`${lineBase} ${activeCls('HSV')} block w-full text-left`}>
+        <button onClick={() => copy(`${hsv.h}, ${hsv.s}, ${hsv.v}`, 'HSV', 'copiedHSV')} className={`${lineBase} ${activeCls('HSV')} block w-full text-left`}>
           <span className="text-gray-600 mr-1">HSV:</span>{hsv.h}, {hsv.s}, {hsv.v}
         </button>
       )}
@@ -44,6 +48,8 @@ function ColorRow({ hex, onColorCopy }: { hex: string; onColorCopy: (msg: string
 }
 
 export default function PaletteCard({ palette, onColorCopy }: PaletteCardProps) {
+  const { t } = useLang();
+
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-all duration-200 group">
       {/* Color strips */}
@@ -53,11 +59,11 @@ export default function PaletteCard({ palette, onColorCopy }: PaletteCardProps) 
             key={idx}
             onClick={() => {
               navigator.clipboard.writeText(color);
-              onColorCopy(`Copied HEX!`);
+              onColorCopy(t('copiedHEX'));
             }}
             className="flex-1 transition-all duration-150 hover:flex-[1.1] cursor-pointer relative group/color"
             style={{ backgroundColor: color }}
-            title={`Click to copy ${color}`}
+            title={`${t('clickToCopy')} ${color}`}
           >
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/color:opacity-100 transition-opacity flex items-center justify-center">
               <span className="text-white text-xs font-mono opacity-80">{color.toUpperCase()}</span>
