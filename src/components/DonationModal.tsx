@@ -74,7 +74,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
           {/* Botón de Mercado Pago Seguro */}
           <button
-            onClick={() => handlePaymentRedirect('https://mpago.li')}
+            onClick={() => handlePaymentRedirect('https://link.mercadopago.com.mx/omniumcore')}
             className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-blue-500/10 hover:from-sky-500/20 hover:to-blue-500/20 transition-all duration-200 group text-left"
           >
             <div className="w-9 h-9 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
