@@ -53,7 +53,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         <div className="space-y-3">
           {/* Botón de PayPal Seguro */}
           <button
-            onClick={() => handlePaymentRedirect('https://paypal.me')}
+            onClick={() => handlePaymentRedirect('https://paypal.me/omniumcore')}
             className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 transition-all duration-200 group text-left"
           >
             <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
