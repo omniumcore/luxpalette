@@ -6,7 +6,7 @@
   
   This software logic is fully protected under the official MIT License. 
   Any unauthorized distribution or claim of ownership without maintaining 
-  original developer credits is strictly prohibited by digital copyright law.
+Original developer credits is strictly prohibited by digital copyright law.
   ========================================================================
 */
 import { useState, useCallback, useMemo, useEffect } from 'react';
@@ -64,7 +64,7 @@ export default function App() {
 
   const activeCategory = selectedCategory || 'all';
 
-  // Motor de Mezcla Estática Intercalada Fija (100% Inmune y Tipada)
+  // Motor de Mezcla Estática Intercalada Fija (Inmune a reinicios)
   const allPalettes = useMemo(() => {
     if (selectedCategory && activeCategory !== 'all') {
       return generatePalettes(activeCategory, 500);
@@ -179,10 +179,12 @@ export default function App() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-6">
+          {/* Selector de idioma */}
           <div className="flex justify-end">
             <LanguageToggle />
           </div>
 
+          {/* Encabezado LuxPalette */}
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2.5">
@@ -230,5 +232,3 @@ export default function App() {
                   {triadColors.map((c, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
                       <div className="h-8 rounded-lg shadow-inner" style={{ backgroundColor: c }} />
-                      <span className="text-[10px] text-center font-mono text-gray-500">{c}</span>
-                    </div>
