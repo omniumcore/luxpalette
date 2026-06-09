@@ -13,9 +13,6 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   deploy:
     environment:
@@ -29,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20 # Cambiado a v20 para asegurar compatibilidad con npm run build
 
       - name: Install dependencies
         run: npm install
