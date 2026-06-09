@@ -18,10 +18,13 @@ import ToastNotification from './components/ToastNotification';
 import DonationModal from './components/DonationModal';
 import LanguageToggle from './components/LanguageToggle';
 import { useLang } from './i18n/LanguageContext';
-import { generatePalettes, type ColorCategory, type ColorPalette } from './data/palettes';
+import { CATEGORY_KEY_MAP } from './i18n/translations';
+import { generatePalettes, PALETTE_CATEGORIES } from './data/palettes';
+import { type ColorCategory, type Palette } from './data/palettes';
 import { hsvToRgb, rgbToHex, hexToHsv, rgbToHsv } from './utils/color';
 
 const PAGE_SIZE = 60;
+
 type RgbKey = 'r' | 'g' | 'b';
 type HsvKey = 'h' | 's' | 'v';
 
@@ -60,16 +63,30 @@ export default function App() {
     if (activeInput !== 'hsv') setHsvText(t2.hsv);
   }, [hue, saturation, brightness, activeInput]);
 
+  const currentCategoryLabel = selectedCategory
+    ? t(CATEGORY_KEY_MAP[selectedCategory] ?? ('cat_pastel' as never))
+    : t('allCategories');
+
   const allPalettes = useMemo(() => {
-    const activeCategory = selectedCategory || 'all';
-    if (selectedCategory && activeCategory !== 'all') return generatePalettes(activeCategory, 500);
-    const categories: ColorCategory[] = ['pastel', 'neon', 'dark', 'metallic'];
-    const blocks = categories.map(cat => generatePalettes(cat, 500));
-    const interleaved: ColorPalette[] = [];
-    for (let i = 0; i < 500; i++) { blocks.forEach(block => { if (block[i]) interleaved.push(block[i]); }); }
+    if (selectedCategory) {
+      return generatePalettes(selectedCategory, 500);
+    }
+    const catArrays = PALETTE_CATEGORIES.map(cat =>
+      generatePalettes(cat.id, 35)
+    );
+    const numCats = catArrays.length;
+    const maxLen = Math.max(...catArrays.map(a => a.length));
+    const interleaved: Palette[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      for (let c = 0; c < numCats; c++) {
+        if (i < catArrays[c].length) interleaved.push(catArrays[c][i]);
+      }
+    }
+    let seed = 4907;
+    const nextRand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
     for (let i = interleaved.length - 1; i > 0; i--) {
-      const j = Math.floor(((i * 9301 + 49297) % 233280) / 233280 * (i + 1));
-      const temp = interleaved[i]; interleaved[i] = interleaved[j]; interleaved[j] = temp;
+      const j = Math.floor(nextRand() * (i + 1));
+      [interleaved[i], interleaved[j]] = [interleaved[j], interleaved[i]];
     }
     return interleaved;
   }, [selectedCategory]);
@@ -77,69 +94,247 @@ export default function App() {
   const filteredPalettes = useMemo(() => {
     if (!searchQuery.trim()) return allPalettes;
     const q = searchQuery.toLowerCase().trim();
-    return allPalettes.filter(p => p.name.toLowerCase().includes(q) || p.tags.some(t2 => t2.toLowerCase().includes(q)) || p.colors.some(c => c.toLowerCase().includes(q)));
+    return allPalettes.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.tags.some(t2 => t2.toLowerCase().includes(q)) ||
+      p.colors.some(c => c.toLowerCase().includes(q))
+    );
   }, [allPalettes, searchQuery]);
+
+  const displayedPalettes = useMemo(
+    () => filteredPalettes.slice(0, visibleCount),
+    [filteredPalettes, visibleCount]
+  );
+
+  const hasMore = visibleCount < filteredPalettes.length;
 
   const currentRgb = hsvToRgb(hue, saturation, brightness);
   const currentHex = rgbToHex(currentRgb.r, currentRgb.g, currentRgb.b);
-  const triadHues = triadMode ? [hue, (hue + 120) % 360, (hue + 240) % 360] : [hue];
-  const triadColors = triadHues.map(h => { const rgb = hsvToRgb(h, saturation, brightness); return rgbToHex(rgb.r, rgb.g, rgb.b); });
 
-  const handleHexChange = (val: string) => { setHexText(val); if (/^#[0-9A-Fa-f]{6}$/.test(val)) { const hsv = hexToHsv(val); if (hsv) { setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v); } } };
-  const handleRgbChange = (ch: RgbKey, val: string) => { setRgbText(p => ({ ...p, [ch]: val.replace(/[^0-9]/g, '') })); };
+  const triadHues = triadMode ? [hue, (hue + 120) % 360, (hue + 240) % 360] : [hue];
+  const triadColors = triadHues.map(h => {
+    const rgb = hsvToRgb(h, saturation, brightness);
+    return rgbToHex(rgb.r, rgb.g, rgb.b);
+  });
+
+  const handleHexChange = (value: string) => {
+    setHexText(value);
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+      const hsv = hexToHsv(value);
+      if (hsv) { setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v); }
+    }
+  };
+
+  const handleHexBlur = () => {
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hexText)) setHexText(currentHex.toUpperCase());
+  };
+
+  const handleRgbChange = (ch: RgbKey, value: string) => {
+    setRgbText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') }));
+  };
+
   const handleRgbBlur = (ch: RgbKey) => {
-    const num = Math.max(0, Math.min(255, parseInt(rgbText[ch]) || 0));
-    setRgbText(p => ({ ...p, [ch]: String(num) }));
-    const r = ch === 'r' ? num : currentRgb.r; const g = ch === 'g' ? num : currentRgb.g; const b = ch === 'b' ? num : currentRgb.b;
-    const hsv = rgbToHsv(r, g, b); setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v);
+    const num = parseInt(rgbText[ch]) || 0;
+    const clamped = Math.max(0, Math.min(255, num));
+    setRgbText(prev => ({ ...prev, [ch]: String(clamped) }));
+    const r = ch === 'r' ? clamped : currentRgb.r;
+    const g = ch === 'g' ? clamped : currentRgb.g;
+    const b = ch === 'b' ? clamped : currentRgb.b;
+    const hsv = rgbToHsv(r, g, b);
+    setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v);
   };
-  const handleHsvChange = (ch: HsvKey, val: string) => { setHsvText(p => ({ ...p, [ch]: val.replace(/[^0-9]/g, '') })); };
+
+  const handleHsvChange = (ch: HsvKey, value: string) => {
+    setHsvText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') }));
+  };
+
   const handleHsvBlur = (ch: HsvKey) => {
-    const num = Math.max(0, Math.min(ch === 'h' ? 360 : 100, parseInt(hsvText[ch]) || 0));
-    setHsvText(p => ({ ...p, [ch]: String(num) }));
-    if (ch === 'h') setHue(num); if (ch === 's') setSaturation(num); if (ch === 'v') setBrightness(num);
+    const maxVal = ch === 'h' ? 360 : 100;
+    const num = parseInt(hsvText[ch]) || 0;
+    const clamped = Math.max(0, Math.min(maxVal, num));
+    setHsvText(prev => ({ ...prev, [ch]: String(clamped) }));
+    if (ch === 'h') setHue(clamped);
+    if (ch === 's') setSaturation(clamped);
+    if (ch === 'v') setBrightness(clamped);
   };
+
+  const handleWheelHueChange = useCallback((newHue: number) => setHue(newHue), []);
+  const handleWheelSaturationChange = useCallback((newSat: number) => setSaturation(newSat), []);
+  const handleWheelBrightnessChange = useCallback((newBri: number) => setBrightness(newBri), []);
+
+  const handleCategorySelect = useCallback((cat: ColorCategory | null) => {
+    setSelectedCategory(cat);
+    setVisibleCount(PAGE_SIZE);
+    setSearchQuery('');
+  }, []);
+
+  const handleColorCopy = useCallback((message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 1800);
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950" style={{ backgroundColor: '#0b131f' }}>
-      <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={useCallback((cat) => { setSelectedCategory(cat); setVisibleCount(PAGE_SIZE); setSearchQuery(''); }, [])} onCoffeeClick={() => setDonationOpen(true)} />
+      <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} onCoffeeClick={() => setDonationOpen(true)} />
+
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-6">
-          <div className="flex justify-end"><LanguageToggle /></div>
-          <div className="flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="flex justify-end mb-2">
+            <LanguageToggle />
+          </div>
+
+          <div className="flex items-center justify-between mb-6">
             <div>
               <div className="flex items-center gap-2.5">
-                <div className="flex gap-0.5"><span className="w-2 h-2 rounded-full bg-sky-400" /><span className="w-2 h-2 rounded-full bg-rose-400" /><span className="w-2 h-2 rounded-full bg-amber-400" /></div>
-                <h1 className="text-2xl font-bold tracking-tight"><span className="text-white">Lux</span><span className="bg-gradient-to-r from-sky-400 via-violet-400 to-rose-400 bg-clip-text text-transparent">Palette</span></h1>
+                <div className="flex gap-0.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                </div>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  <span className="text-white">Lux</span>
+                  <span className="bg-gradient-to-r from-sky-400 via-violet-400 to-rose-400 bg-clip-text text-transparent">Palette</span>
+                </h1>
               </div>
               <p className="text-xs text-gray-500 mt-1 tracking-wide">{t('tagline')}</p>
             </div>
-            <div className="flex items-center gap-4"><SearchBar value={searchQuery} onChange={setSearchQuery} /></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-900/40 p-6 rounded-2xl border border-gray-800/60 backdrop-blur-sm">
-            <div className="flex flex-col justify-center items-center gap-3">
-              <ColorWheelAdvanced hue={hue} saturation={saturation} brightness={brightness} triadMode={triadMode} onHueChange={useCallback((h) => setHue(h), [])} onSaturationChange={useCallback((s) => setSaturation(s), [])} onBrightnessChange={useCallback((b) => setBrightness(b), [])} />
-              <button onClick={() => setTriadMode(!triadMode)} className={`text-xs px-3 py-1 rounded-lg border font-medium transition-colors ${triadMode ? 'bg-sky-500/20 text-sky-400 border-sky-500/40' : 'bg-gray-950 text-gray-400 border-gray-800'}`}>{triadMode ? 'Modo Tríada: Activo' : 'Activar Modo Tríada'}</button>
-            </div>
-            <div className="md:col-span-2 flex flex-col justify-center gap-4">
-              <div className="flex flex-col gap-1"><label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">HEX</label><input type="text" value={hexText} onChange={(e) => handleHexChange(e.target.value)} onBlur={() => { if (!/^#[0-9A-Fa-f]{6}$/.test(hexText)) setHexText(currentHex.toUpperCase()); }} onFocus={() => setActiveInput('hex')} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-sky-500 transition-colors" /></div>
-              <div className="grid grid-cols-3 gap-4">
-                {(['r', 'g', 'b'] as RgbKey[]).map((ch) => (
-                  <div key={ch} className="flex flex-col gap-1"><label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{ch}</label><input type="text" value={rgbText[ch]} onChange={(e) => handleRgbChange(ch, e.target.value)} onBlur={() => { handleRgbBlur(ch); setActiveInput(null); }} onFocus={() => setActiveInput('rgb')} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2 text-white font-mono text-center focus:outline-none focus:border-sky-500 transition-colors" /></div>
-                ))}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-1">
+              <ColorWheelAdvanced
+                hue={hue}
+                saturation={saturation}
+                brightness={brightness}
+                triadMode={triadMode}
+                onHueChange={handleWheelHueChange}
+                onSaturationChange={handleWheelSaturationChange}
+                onBrightnessChange={handleWheelBrightnessChange}
+              />
+              
+              <div className="mt-4 bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-gray-400">{t('triadHarmony')}</span>
+                  <button 
+                    onClick={() => setTriadMode(!triadMode)}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${triadMode ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    {triadMode ? t('enabled') : t('disabled')}
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {triadColors.map((c, idx) => (
+                    <div key={idx} className="flex flex-col gap-1">
+                      <div className="h-8 rounded-lg shadow-inner" style={{ backgroundColor: c }} />
+                      <span className="text-[10px] text-center font-mono text-gray-500">{c}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                {(['h', 's', 'v'] as HsvKey[]).map((ch) => (
-                  <div key={ch} className="flex flex-col gap-1"><label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{ch}</label><input type="text" value={hsvText[ch]} onChange={(e) => handleHsvChange(ch, e.target.value)} onBlur={() => { handleHsvBlur(ch); setActiveInput(null); }} onFocus={() => setActiveInput('hsv')} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2 text-white font-mono text-center focus:outline-none focus:border-sky-500 transition-colors" /></div>
-                ))}
+            </div>
+
+            <div className="lg:col-span-2 space-y-4">
+              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+                <span className="text-xs font-medium text-gray-400 mb-3 block">{t('colorCode')}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">HEX</label>
+                    <input
+                      type="text"
+                      value={hexText}
+                      onChange={e => handleHexChange(e.target.value)}
+                      onBlur={handleHexBlur}
+                      onFocus={() => setActiveInput('hex')}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-200 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 outline-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">RGB</label>
+                    <div className="flex gap-1">
+                      {(['r', 'g', 'b'] as RgbKey[]).map(ch => (
+                        <input
+                          key={ch}
+                          type="text"
+                          value={rgbText[ch]}
+                          onChange={e => handleRgbChange(ch, e.target.value)}
+                          onBlur={() => handleRgbBlur(ch)}
+                          onFocus={() => setActiveInput('rgb')}
+                          placeholder={ch.toUpperCase()}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 text-sm font-mono text-gray-200 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 outline-none transition-colors"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">HSV</label>
+                    <div className="flex gap-1">
+                      {(['h', 's', 'v'] as HsvKey[]).map(ch => (
+                        <input
+                          key={ch}
+                          type="text"
+                          value={hsvText[ch]}
+                          onChange={e => handleHsvChange(ch, e.target.value)}
+                          onBlur={() => handleHsvBlur(ch)}
+                          onFocus={() => setActiveInput('hsv')}
+                          placeholder={ch.toUpperCase()}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 text-sm font-mono text-gray-200 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 outline-none transition-colors"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-4 mt-2">
-            <div className="flex items-center justify-between text-sm text-gray-400 px-1"><span>{filteredPalettes.length} {filteredPalettes.length !== 1 ? t('palettes') : t('palette_singular')}</span></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPalettes.slice(0, visibleCount).map((palette) => (
-                <PaletteCard key={palette.id} palette={palette} onCopy={useCallback((msg) => setToastMessage(msg), [])} currentHex={currentHex} triadColors={triadColors} />
+
+          <SearchBar value={searchQuery} onChange={setSearchQuery} />
+
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-gray-400">
+              <span className="font-semibold text-sky-400">{currentCategoryLabel}</span>
+              {' '}{t('showing')}{' '}
+              <span className="font-semibold text-gray-200">{displayedPalettes.length}</span>
+              {' '}{t('of')}{' '}
+              <span className="font-semibold text-gray-200">{filteredPalettes.length}</span>{' '}
+              {filteredPalettes.length === 1 ? t('palette_singular') : t('palettes')}
+            </p>
+          </div>
+
+          {displayedPalettes.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-gray-400 text-lg mb-2">{t('noPalettesFound')}</p>
+              <p className="text-gray-500 text-sm">{t('noPalettesHint')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {displayedPalettes.map(palette => (
+                <PaletteCard
+                  key={palette.id}
+                  palette={palette}
+                  onColorCopy={handleColorCopy}
+                />
               ))}
             </div>
-            {visibleCount < filteredPalettes.length && (
+          )}
+
+          {hasMore && (
+            <div className="text-center mt-8 mb-4">
+              <button
+                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                className="px-6 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+              >
+                {t('loadMore')} ({filteredPalettes.length - visibleCount} {t('remaining')})
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {toastMessage && (
+        <ToastNotification key={toastMessage} message={toastMessage} />
+      )}
+
+      <DonationModal isOpen={donationOpen} onClose={() => setDonationOpen(false)} />
+    </div>
+  );
+}
