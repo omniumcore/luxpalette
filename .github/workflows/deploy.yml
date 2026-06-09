@@ -5,17 +5,13 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
-
-# Forzamos el entorno a Node 24 para eliminar la advertencia de GitHub por completo
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy:
@@ -30,12 +26,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24 # Usamos la versión de Node requerida por la plataforma
+          node-version: 24
 
       - name: Install dependencies
         run: npm install
 
-      # Cambiamos esto para que si el build falla, nos muestre exactamente qué archivo tiene el error
       - name: Build application
         run: |
           echo "Iniciando compilación del proyecto..."
@@ -47,7 +42,7 @@ jobs:
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: ./dist
 
       - name: Deploy to GitHub Pages
         id: deployment
