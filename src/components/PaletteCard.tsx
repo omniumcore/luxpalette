@@ -1,11 +1,13 @@
-import { useLang } from '../i18n/LanguageContext';
-import { type ColorPalette } from '../data/palettes';
-
 interface PaletteCardProps {
-  palette: ColorPalette;
+  palette: {
+    id: string;
+    name: string;
+    colors: string[];
+    tags: string[];
+  };
   onCopy: (message: string) => void;
-  currentHex?: string;    // Propiedad opcional para evitar conflictos
-  triadColors?: string[]; // Propiedad opcional para evitar conflictos
+  currentHex?: string;
+  triadColors?: string[];
 }
 
 export default function PaletteCard({ 
@@ -14,11 +16,13 @@ export default function PaletteCard({
   currentHex,
   triadColors 
 }: PaletteCardProps) {
-  const { t } = useLang();
 
   const handleColorClick = (color: string) => {
-    navigator.clipboard.writeText(color);
-    onCopy(`${t('copied') || 'Copiado'}: ${color}`);
+    // Intenta copiar al portapapeles de forma segura
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(color);
+    }
+    onCopy(`Copiado: ${color}`);
   };
 
   return (
@@ -27,8 +31,8 @@ export default function PaletteCard({
         <h3 className="text-sm font-medium text-gray-200 truncate">{palette.name}</h3>
       </div>
 
-      {/* Barra de colores de la paleta */}
-      <div className="flex h-12 w-full rounded-xl overflow-hidden shadow-inner border border-gray-950">
+      {/* Contenedor de la barra de colores */}
+      <div className="flex h-12 w-full rounded-xl overflow-hidden border border-gray-950">
         {palette.colors.map((color, index) => (
           <button
             key={index}
@@ -44,7 +48,7 @@ export default function PaletteCard({
         ))}
       </div>
 
-      {/* Etiquetas / Tags de la paleta */}
+      {/* Contenedor de Etiquetas (Tags) */}
       <div className="flex flex-wrap gap-1.5">
         {palette.tags.map((tag, index) => (
           <span 
