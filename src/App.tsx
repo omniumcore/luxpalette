@@ -64,7 +64,6 @@ export default function App() {
 
   const activeCategory = selectedCategory || 'all';
 
-  // Motor de Mezcla Estática Intercalada Fija (Inmune a reinicios)
   const allPalettes = useMemo(() => {
     if (selectedCategory && activeCategory !== 'all') {
       return generatePalettes(activeCategory, 500);
@@ -204,7 +203,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Sección avanzada de rueda de colores e inputs técnicos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-900/40 p-6 rounded-2xl border border-gray-800/60 backdrop-blur-sm">
             <div className="flex flex-col justify-center items-center gap-3">
               <ColorWheelAdvanced 
@@ -216,7 +214,6 @@ export default function App() {
                 onSaturationChange={handleWheelSaturationChange}
                 onBrightnessChange={handleWheelBrightnessChange}
               />
-              {/* Botón nativo para cambiar el modo tríada de forma externa sin romper las props */}
               <button 
                 onClick={() => setTriadMode(!triadMode)} 
                 className={`text-xs px-3 py-1 rounded-lg border font-medium transition-colors ${
@@ -236,3 +233,7 @@ export default function App() {
                   onChange={(e) => handleHexChange(e.target.value)}
                   onBlur={handleHexBlur}
                   onFocus={() => setActiveInput('hex')}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-sky-500 transition-colors"
+                />
+              </div>
+
