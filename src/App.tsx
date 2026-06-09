@@ -20,7 +20,7 @@ import LanguageToggle from './components/LanguageToggle';
 import { useLang } from './i18n/LanguageContext';
 import { CATEGORY_KEY_MAP } from './i18n/translations';
 import { generatePalettes } from './data/palettes';
-import { type ColorCategory, type ColorPalette } from './data/palettes'; // <-- ¡Tipo oficial agregado para seguridad!
+import { type ColorCategory, type ColorPalette } from './data/palettes';
 import { hsvToRgb, rgbToHex, hexToHsv, rgbToHsv } from './utils/color';
 
 const PAGE_SIZE = 60;
@@ -65,7 +65,7 @@ export default function App() {
 
   const activeCategory = selectedCategory || 'all';
 
-  // Motor de Mezcla Sembrada Intercalada (Estricta Inmune sin variables sueltas)
+  // Motor de Mezcla Estática Intercalada Fija (Inmune a reinicios)
   const allPalettes = useMemo(() => {
     if (selectedCategory && activeCategory !== 'all') {
       return generatePalettes(activeCategory, 500);
@@ -73,7 +73,7 @@ export default function App() {
 
     const categories: ColorCategory[] = ['pastel', 'neon', 'dark', 'metallic'];
     const blocks = categories.map(cat => generatePalettes(cat, 500));
-    const interleaved: ColorPalette[] = []; // <-- ¡Cambiado any[] por ColorPalette[] para complacer a TypeScript!
+    const interleaved: ColorPalette[] = [];
 
     for (let i = 0; i < 500; i++) {
       blocks.forEach(block => {
@@ -172,17 +172,23 @@ export default function App() {
     setToastMessage(message);
   }, []);
 
+  const paletteWord = filteredPalettes.length !== 1 ? t('palettes') : t('palette_singular');
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950" style={{ backgroundColor: '#0b131f' }}>
+      {/* Barra de Categorías Lateral Fija de tu Diseño */}
       <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} onCoffeeClick={() => setDonationOpen(true)} />
 
+      {/* Área Central Desplazable en una Sola Columna como tu Foto */}
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex justify-end mb-2">
+        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-6">
+          {/* Selector de idioma */}
+          <div className="flex justify-end">
             <LanguageToggle />
           </div>
 
-          <div className="flex items-center justify-between mb-6">
+          {/* Encabezado LuxPalette */}
+          <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2.5">
                 <div className="flex gap-0.5">
@@ -199,8 +205,9 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-1">
+          {/* Bloque 1 Superior: Rueda de Color Expandida al Ancho */}
+          <div className="w-full bg-gray-900/30 border border-gray-800/80 rounded-2xl p-6 backdrop-blur-sm grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <div className="md:col-span-1 flex justify-center">
               <ColorWheelAdvanced 
                 hue={hue} 
                 saturation={saturation} 
@@ -211,8 +218,10 @@ export default function App() {
                 onSaturationChange={handleWheelSaturationChange}
                 onBrightnessChange={handleWheelBrightnessChange}
               />
-              
-              <div className="mt-4 bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+            </div>
+            
+            <div className="md:col-span-2 flex flex-col gap-4">
+              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-medium text-gray-400">{t('triadHarmony')}</span>
                   <button 
@@ -224,12 +233,3 @@ export default function App() {
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {triadColors.map((c, idx) => (
-                    <div key={idx} className="flex flex-col gap-1">
-                      <div className="h-8 rounded-lg shadow-inner" style={{ backgroundColor: c }} />
-                      <span className="text-[10px] text-center font-mono text-gray-500">{c}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
