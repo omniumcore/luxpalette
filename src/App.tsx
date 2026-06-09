@@ -206,17 +206,25 @@ export default function App() {
 
           {/* Sección avanzada de rueda de colores e inputs técnicos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-900/40 p-6 rounded-2xl border border-gray-800/60 backdrop-blur-sm">
-            <div className="flex justify-center items-center">
+            <div className="flex flex-col justify-center items-center gap-3">
               <ColorWheelAdvanced 
                 hue={hue} 
                 saturation={saturation} 
                 brightness={brightness}
+                triadMode={triadMode}
                 onHueChange={handleWheelHueChange}
                 onSaturationChange={handleWheelSaturationChange}
                 onBrightnessChange={handleWheelBrightnessChange}
-                triadMode={triadMode}
-                onTriadModeToggle={() => setTriadMode(!triadMode)}
               />
+              {/* Botón nativo para cambiar el modo tríada de forma externa sin romper las props */}
+              <button 
+                onClick={() => setTriadMode(!triadMode)} 
+                className={`text-xs px-3 py-1 rounded-lg border font-medium transition-colors ${
+                  triadMode ? 'bg-sky-500/20 text-sky-400 border-sky-500/40' : 'bg-gray-950 text-gray-400 border-gray-800'
+                }`}
+              >
+                {triadMode ? 'Modo Tríada: Activo' : 'Activar Modo Tríada'}
+              </button>
             </div>
 
             <div className="md:col-span-2 flex flex-col justify-center gap-4">
@@ -228,10 +236,3 @@ export default function App() {
                   onChange={(e) => handleHexChange(e.target.value)}
                   onBlur={handleHexBlur}
                   onFocus={() => setActiveInput('hex')}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-sky-500 transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                {(['r', 'g', 'b'] as RgbKey[]).map((ch) => (
-                  <div key={ch} className="flex flex-col gap-1">
