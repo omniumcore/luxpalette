@@ -4,7 +4,6 @@ on:
   push:
     branches: [ main ]
 
-# Permisos explícitos forzados en el código para evitar bloqueos de cuenta nueva
 permissions:
   contents: write
   pages: write
