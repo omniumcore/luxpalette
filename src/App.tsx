@@ -24,6 +24,7 @@ import { type ColorCategory, type Palette } from './data/palettes';
 import { hsvToRgb, rgbToHex, hexToHsv, rgbToHsv } from './utils/color';
 
 const PAGE_SIZE = 60;
+
 type RgbKey = 'r' | 'g' | 'b';
 type HsvKey = 'h' | 's' | 'v';
 
@@ -62,16 +63,24 @@ export default function App() {
     if (activeInput !== 'hsv') setHsvText(t2.hsv);
   }, [hue, saturation, brightness, activeInput]);
 
-  const currentCategoryLabel = selectedCategory ? t(CATEGORY_KEY_MAP[selectedCategory] ?? ('cat_pastel' as never)) : t('allCategories');
+  const currentCategoryLabel = selectedCategory
+    ? t(CATEGORY_KEY_MAP[selectedCategory] ?? ('cat_pastel' as never))
+    : t('allCategories');
 
   const allPalettes = useMemo(() => {
-    if (selectedCategory) return generatePalettes(selectedCategory, 500);
-    const catArrays = PALETTE_CATEGORIES.map(cat => generatePalettes(cat.id, 35));
+    if (selectedCategory) {
+      return generatePalettes(selectedCategory, 500);
+    }
+    const catArrays = PALETTE_CATEGORIES.map(cat =>
+      generatePalettes(cat.id, 35)
+    );
     const numCats = catArrays.length;
     const maxLen = Math.max(...catArrays.map(a => a.length));
     const interleaved: Palette[] = [];
     for (let i = 0; i < maxLen; i++) {
-      for (let c = 0; c < numCats; c++) { if (i < catArrays[c].length) interleaved.push(catArrays[c][i]); }
+      for (let c = 0; c < numCats; c++) {
+        if (i < catArrays[c].length) interleaved.push(catArrays[c][i]);
+      }
     }
     let seed = 4907;
     const nextRand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
@@ -85,67 +94,137 @@ export default function App() {
   const filteredPalettes = useMemo(() => {
     if (!searchQuery.trim()) return allPalettes;
     const q = searchQuery.toLowerCase().trim();
-    return allPalettes.filter(p => p.name.toLowerCase().includes(q) || p.tags.some(t2 => t2.toLowerCase().includes(q)) || p.colors.some(c => c.toLowerCase().includes(q)));
+    return allPalettes.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.tags.some(t2 => t2.toLowerCase().includes(q)) ||
+      p.colors.some(c => c.toLowerCase().includes(q))
+    );
   }, [allPalettes, searchQuery]);
 
-  const displayedPalettes = useMemo(() => filteredPalettes.slice(0, visibleCount), [filteredPalettes, visibleCount]);
+  const displayedPalettes = useMemo(
+    () => filteredPalettes.slice(0, visibleCount),
+    [filteredPalettes, visibleCount]
+  );
+
   const hasMore = visibleCount < filteredPalettes.length;
 
   const currentRgb = hsvToRgb(hue, saturation, brightness);
   const currentHex = rgbToHex(currentRgb.r, currentRgb.g, currentRgb.b);
-  const triadHues = triadMode ? [hue, (hue + 120) % 360, (hue + 240) % 360] : [hue];
-  const triadColors = triadHues.map(h => { const rgb = hsvToRgb(h, saturation, brightness); return rgbToHex(rgb.r, rgb.g, rgb.b); });
 
-  const handleHexChange = (value: string) => { setHexText(value); if (/^#[0-9A-Fa-f]{6}$/.test(value)) { const hsv = hexToHsv(value); if (hsv) { setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v); } } };
-  const handleHexBlur = () => { if (!/^#[0-9A-Fa-f]{6}$/.test(hexText)) setHexText(currentHex.toUpperCase()); };
-  const handleRgbChange = (ch: RgbKey, value: string) => { setRgbText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') })); };
-  const handleRgbBlur = (ch: RgbKey) => {
-    const num = parseInt(rgbText[ch]) || 0; const clamped = Math.max(0, Math.min(255, num));
-    setRgbText(prev => ({ ...prev, [ch]: String(clamped) }));
-    const r = ch === 'r' ? clamped : currentRgb.r; const g = ch === 'g' ? clamped : currentRgb.g; const b = ch === 'b' ? clamped : currentRgb.b;
-    const hsv = rgbToHsv(r, g, b); setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v);
+  const triadHues = triadMode ? [hue, (hue + 120) % 360, (hue + 240) % 360] : [hue];
+  const triadColors = triadHues.map(h => {
+    const rgb = hsvToRgb(h, saturation, brightness);
+    return rgbToHex(rgb.r, rgb.g, rgb.b);
+  });
+
+  const handleHexChange = (value: string) => {
+    setHexText(value);
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+      const hsv = hexToHsv(value);
+      if (hsv) { setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v); }
+    }
   };
-  const handleHsvChange = (ch: HsvKey, value: string) => { setHsvText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') })); };
+
+  const handleHexBlur = () => {
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hexText)) setHexText(currentHex.toUpperCase());
+  };
+
+  const handleRgbChange = (ch: RgbKey, value: string) => {
+    setRgbText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') }));
+  };
+
+  const handleRgbBlur = (ch: RgbKey) => {
+    const num = parseInt(rgbText[ch]) || 0;
+    const clamped = Math.max(0, Math.min(255, num));
+    setRgbText(prev => ({ ...prev, [ch]: String(clamped) }));
+    const r = ch === 'r' ? clamped : currentRgb.r;
+    const g = ch === 'g' ? clamped : currentRgb.g;
+    const b = ch === 'b' ? clamped : currentRgb.b;
+    const hsv = rgbToHsv(r, g, b);
+    setHue(hsv.h); setSaturation(hsv.s); setBrightness(hsv.v);
+  };
+
+  const handleHsvChange = (ch: HsvKey, value: string) => {
+    setHsvText(prev => ({ ...prev, [ch]: value.replace(/[^0-9]/g, '') }));
+  };
+
   const handleHsvBlur = (ch: HsvKey) => {
-    const maxVal = ch === 'h' ? 360 : 100; const num = parseInt(hsvText[ch]) || 0; const clamped = Math.max(0, Math.min(maxVal, num));
+    const maxVal = ch === 'h' ? 360 : 100;
+    const num = parseInt(hsvText[ch]) || 0;
+    const clamped = Math.max(0, Math.min(maxVal, num));
     setHsvText(prev => ({ ...prev, [ch]: String(clamped) }));
-    if (ch === 'h') setHue(clamped); if (ch === 's') setSaturation(clamped); if (ch === 'v') setBrightness(clamped);
+    if (ch === 'h') setHue(clamped);
+    if (ch === 's') setSaturation(clamped);
+    if (ch === 'v') setBrightness(clamped);
   };
 
   const handleWheelHueChange = useCallback((newHue: number) => setHue(newHue), []);
   const handleWheelSaturationChange = useCallback((newSat: number) => setSaturation(newSat), []);
   const handleWheelBrightnessChange = useCallback((newBri: number) => setBrightness(newBri), []);
-  const handleCategorySelect = useCallback((cat: ColorCategory | null) => { setSelectedCategory(cat); setVisibleCount(PAGE_SIZE); setSearchQuery(''); }, []);
-  const handleColorCopy = useCallback(() => { setToastMessage(t('copied') || 'Copiado al portapapeles'); setTimeout(() => setToastMessage(null), 1800); }, [t]);
+
+  const handleCategorySelect = useCallback((cat: ColorCategory | null) => {
+    setSelectedCategory(cat);
+    setVisibleCount(PAGE_SIZE);
+    setSearchQuery('');
+  }, []);
+
+  const handleColorCopy = useCallback(() => {
+    setToastMessage(t('copied') || 'Copiado al portapapeles');
+    setTimeout(() => setToastMessage(null), 1800);
+  }, [t]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950" style={{ backgroundColor: '#0b131f' }}>
       <CategorySidebar selectedCategory={selectedCategory} onSelectCategory={handleCategorySelect} onCoffeeClick={() => setDonationOpen(true)} />
+
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex justify-end mb-2"><LanguageToggle /></div>
+          <div className="flex justify-end mb-2">
+            <LanguageToggle />
+          </div>
+
           <div className="flex items-center justify-between mb-6">
             <div>
               <div className="flex items-center gap-2.5">
-                <div className="flex gap-0.5"><span className="w-2 h-2 rounded-full bg-sky-400" /><span className="w-2 h-2 rounded-full bg-rose-400" /><span className="w-2 h-2 rounded-full bg-amber-400" /></div>
-                <h1 className="text-2xl font-bold tracking-tight"><span className="text-white">Lux</span><span className="bg-gradient-to-r from-sky-400 via-violet-400 to-rose-400 bg-clip-text text-transparent">Palette</span></h1>
+                <div className="flex gap-0.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                </div>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  <span className="text-white">Lux</span>
+                  <span className="bg-gradient-to-r from-sky-400 via-violet-400 to-rose-400 bg-clip-text text-transparent">Palette</span>
+                </h1>
               </div>
               <p className="text-xs text-gray-500 mt-1 tracking-wide">{t('tagline')}</p>
             </div>
-            <div className="flex items-center gap-4"><SearchBar value={searchQuery} onChange={setSearchQuery} /></div>
+            <div className="flex items-center gap-4">
+              <SearchBar value={searchQuery} onChange={setSearchQuery} />
+            </div>
           </div>
 
-          {/* DISEÑO HORIZONTAL RESTAURADO */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-8 bg-gray-900/10 p-6 rounded-2xl border border-gray-800/30">
+          {/* CONTENEDOR DE LA RUEDA E INPUTS EN PARALELO */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-8 bg-gray-900/20 p-6 rounded-2xl border border-gray-800/40">
+            
+            {/* PANEL IZQUIERDO: Rueda e Interruptores abajo */}
             <div className="lg:col-span-4 flex flex-col items-center justify-center">
-              <ColorWheelAdvanced hue={hue} saturation={saturation} brightness={brightness} triadMode={triadMode} onHueChange={handleWheelHueChange} onSaturationChange={handleWheelSaturationChange} onBrightnessChange={handleWheelBrightnessChange} />
+              <ColorWheelAdvanced 
+                hue={hue} 
+                saturation={saturation} 
+                brightness={brightness} 
+                triadMode={triadMode} 
+                onHueChange={handleWheelHueChange} 
+                onSaturationChange={handleWheelSaturationChange} 
+                onBrightnessChange={handleWheelBrightnessChange} 
+              />
+              
+              {/* Botones de Selección alineados en la parte inferior */}
               <div className="flex items-center bg-gray-950 p-1 rounded-xl border border-gray-800 mt-4 w-full max-w-[280px]">
-                <button onClick={() => setTriadMode(false)} className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${!triadMode ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'text-gray-400 hover:text-gray-200'}`}>Color Único</button>
-                <button onClick={() => setTriadMode(true)} className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${triadMode ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'text-gray-400 hover:text-gray-200'}`}>Tríada</button>
-              </div>
-            </div>
-            <div className="lg:col-span-8 flex flex-col gap-3 w-full pt-4">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider pl-1">Código del Color</span>
-              <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center w-full bg-gray-950/40 border border-gray-800/50 p-3 rounded-xl backdrop-blur-md">
-                <div className="w-full lg:w-32"><input type="text" value={hexText} onChange={(e) => handleHexChange(e.target.value)} onBlur={handleHexBlur} onFocus={() => setActiveInput('hex')} className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-white font-mono text-sm text-center focus:outline-none focus:border-sky-500" /></div>
-                <div className="flex items-center bg-gray-950 border border-gray-800 rounded-lg px-2 py-1.5 w-full lg:w-16"><span className="text-xs font-mono text-gray-500 mr-1">R:</span><input type="text" value={rgbText.r} onChange={(e) => handleRgbChange('r', e.target.value)} onBlur={() => { handleRgbBlur('r'); setActiveInput(null); }} onFocus={() => setActiveInput('rgb')} className="w-full bg-transparent text-white font-mono text-sm text-center focus:outline-none" /></div>
+                <button 
+                  onClick={() => setTriadMode(false)}
+                  className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${!triadMode ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'text-gray-400 hover:text-gray-200'}`}
+                >
+                  Color Único
+                </button>
+                <button 
+                  onClick={() => setTriadMode(true)}
