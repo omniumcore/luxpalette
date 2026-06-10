@@ -3,10 +3,10 @@
   CORE ARCHITECTURE & AUTHORSHIP REGISTRATION
   Lead System Engineer: Ancient of Light
   Production Label: OmniumCore
-  
-  This software logic is fully protected under the official MIT License. 
-  Any unauthorized distribution or claim of ownership without maintaining 
-Original developer credits is strictly prohibited by digital copyright law.
+
+  This software logic is fully protected under the official MIT License.
+  Any unauthorized distribution or claim of ownership without maintaining
+  Original developer credits is strictly prohibited by digital copyright law.
   ========================================================================
 */
 import { useState, useCallback, useMemo, useEffect } from 'react';
@@ -204,27 +204,207 @@ export default function App() {
           </div>
 
           {/* CONTENEDOR DE LA RUEDA E INPUTS EN PARALELO */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-8 bg-gray-900/20 p-6 rounded-2xl border border-gray-800/40">
-            
-            {/* PANEL IZQUIERDO: Rueda e Interruptores abajo */}
-            <div className="lg:col-span-4 flex flex-col items-center justify-center">
-              <ColorWheelAdvanced 
-                hue={hue} 
-                saturation={saturation} 
-                brightness={brightness} 
-                triadMode={triadMode} 
-                onHueChange={handleWheelHueChange} 
-                onSaturationChange={handleWheelSaturationChange} 
-                onBrightnessChange={handleWheelBrightnessChange} 
-              />
-              
-              {/* Botones de Selección alineados en la parte inferior */}
-              <div className="flex items-center bg-gray-950 p-1 rounded-xl border border-gray-800 mt-4 w-full max-w-[280px]">
-                <button 
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-8 bg-gray-900/10 p-6 rounded-2xl border border-gray-800/30">
+
+            {/* PANEL IZQUIERDO: Botones arriba, Rueda abajo */}
+            <div className="lg:col-span-4 flex flex-col items-center">
+
+              {/* Botones de Selección en la parte superior */}
+              <div className="flex items-center bg-gray-950 p-1 rounded-xl border border-gray-800 mb-4 w-full max-w-[280px]">
+                <button
                   onClick={() => setTriadMode(false)}
                   className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${!triadMode ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'text-gray-400 hover:text-gray-200'}`}
                 >
                   Color Único
                 </button>
-                <button 
+                <button
                   onClick={() => setTriadMode(true)}
+                  className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${triadMode ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'text-gray-400 hover:text-gray-200'}`}
+                >
+                  Tríada (3 colores)
+                </button>
+              </div>
+
+              <ColorWheelAdvanced
+                hue={hue}
+                saturation={saturation}
+                brightness={brightness}
+                triadMode={triadMode}
+                onHueChange={handleWheelHueChange}
+                onSaturationChange={handleWheelSaturationChange}
+                onBrightnessChange={handleWheelBrightnessChange}
+              />
+            </div>
+
+            {/* PANEL DERECHO: Inputs numéricos */}
+            <div className="lg:col-span-8 flex flex-col gap-4 w-full pt-4">
+
+              {/* Top Card: CÓDIGO DEL COLOR */}
+              <div className="bg-gray-900/40 p-4 rounded-xl border border-gray-800">
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3 block">Código del Color</label>
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                  <div
+                    className="w-20 h-20 rounded-lg border border-gray-700 shrink-0"
+                    style={{ backgroundColor: currentHex }}
+                  />
+                  <div className="flex-1 w-full space-y-3">
+                    <div>
+                      <div className="text-xs text-gray-500 font-mono mb-1">HEX</div>
+                      <input
+                        type="text"
+                        value={hexText}
+                        onChange={(e) => { handleHexChange(e.target.value); setActiveInput('hex'); }}
+                        onBlur={() => { handleHexBlur(); setActiveInput(null); }}
+                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        placeholder="#000000"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <div className="text-xs text-red-400 font-mono mb-1">R</div>
+                        <input
+                          type="text"
+                          value={rgbText.r}
+                          onChange={(e) => { handleRgbChange('r', e.target.value); setActiveInput('rgb'); }}
+                          onBlur={() => { handleRgbBlur('r'); setActiveInput(null); }}
+                          className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <div className="text-xs text-green-400 font-mono mb-1">G</div>
+                        <input
+                          type="text"
+                          value={rgbText.g}
+                          onChange={(e) => { handleRgbChange('g', e.target.value); setActiveInput('rgb'); }}
+                          onBlur={() => { handleRgbBlur('g'); setActiveInput(null); }}
+                          className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <div className="text-xs text-blue-400 font-mono mb-1">B</div>
+                        <input
+                          type="text"
+                          value={rgbText.b}
+                          onChange={(e) => { handleRgbChange('b', e.target.value); setActiveInput('rgb'); }}
+                          onBlur={() => { handleRgbBlur('b'); setActiveInput(null); }}
+                          className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Card: VALORES HSV */}
+              <div className="bg-gray-900/40 p-4 rounded-xl border border-gray-800">
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3 block">Valores HSV</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <div className="text-xs text-cyan-400 font-mono mb-1">H</div>
+                    <input
+                      type="text"
+                      value={hsvText.h}
+                      onChange={(e) => { handleHsvChange('h', e.target.value); setActiveInput('hsv'); }}
+                      onBlur={() => { handleHsvBlur('h'); setActiveInput(null); }}
+                      className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-xs text-amber-400 font-mono mb-1">S</div>
+                    <input
+                      type="text"
+                      value={hsvText.s}
+                      onChange={(e) => { handleHsvChange('s', e.target.value); setActiveInput('hsv'); }}
+                      onBlur={() => { handleHsvBlur('s'); setActiveInput(null); }}
+                      className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-xs text-violet-400 font-mono mb-1">V</div>
+                    <input
+                      type="text"
+                      value={hsvText.v}
+                      onChange={(e) => { handleHsvChange('v', e.target.value); setActiveInput('hsv'); }}
+                      onBlur={() => { handleHsvBlur('v'); setActiveInput(null); }}
+                      className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Triad Colors Display */}
+          {triadMode && triadColors.length === 3 && (
+            <div className="mb-6 flex items-center gap-3 p-4 bg-gray-900/30 rounded-xl border border-gray-800/50">
+              <span className="text-xs text-gray-400 font-medium">{t('triadColors') || 'Colores Tríada'}:</span>
+              <div className="flex gap-2">
+                {triadColors.map((color, idx) => {
+                  const isLight = (0.299 * parseInt(color.slice(1, 3), 16) + 0.587 * parseInt(color.slice(3, 5), 16) + 0.114 * parseInt(color.slice(5, 7), 16)) / 255 > 0.5;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        navigator.clipboard.writeText(color);
+                        handleColorCopy();
+                      }}
+                      className="w-14 h-14 rounded-lg border border-gray-700 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center relative overflow-hidden"
+                      style={{ backgroundColor: color }}
+                      title={color.toUpperCase()}
+                    >
+                      <span
+                        className="text-[10px] font-mono font-semibold px-1 text-center leading-tight"
+                        style={{ color: isLight ? '#000000' : '#ffffff' }}
+                      >
+                        {color.toUpperCase()}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Category Label */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-200">{currentCategoryLabel}</h2>
+            <p className="text-xs text-gray-500">{displayedPalettes.length} {t('palettesCount') || 'paletas'}</p>
+          </div>
+
+          {/* Palette Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {displayedPalettes.map(palette => (
+              <PaletteCard key={palette.id} palette={palette} onColorCopy={handleColorCopy} />
+            ))}
+          </div>
+
+          {/* Load More */}
+          {hasMore && (
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                className="px-6 py-2.5 bg-sky-500/10 text-sky-400 border border-sky-500/30 rounded-lg hover:bg-sky-500/20 transition-colors text-sm font-medium"
+              >
+                {t('loadMore') || 'Cargar más'}
+              </button>
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      {/* Toast Notification */}
+      {toastMessage && <ToastNotification message={toastMessage} />}
+
+      {/* Donation Modal */}
+      <DonationModal isOpen={donationOpen} onClose={() => setDonationOpen(false)} />
+    </div>
+  );
+}
