@@ -203,10 +203,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* CONTENEDOR DE LA RUEDA E INPUTS EN PARALELO (LADO A LADO) */}
+          {/* DISTRIBUCIÓN HORIZONTAL ORIGINARIA */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-8 bg-gray-900/10 p-6 rounded-2xl border border-gray-800/30">
             
-            {/* PANEL IZQUIERDO: Rueda de color y botones de Tríada exactamente debajo */}
+            {/* LADO IZQUIERDO: Rueda Avanzada e Interruptores estrictamente abajo */}
             <div className="lg:col-span-4 flex flex-col items-center justify-center">
               <ColorWheelAdvanced 
                 hue={hue} 
@@ -218,7 +218,7 @@ export default function App() {
                 onBrightnessChange={handleWheelBrightnessChange} 
               />
               
-              {/* Botones de Selección alineados abajo de la rueda */}
+              {/* Controles de Selección restaurados abajo de la rueda */}
               <div className="flex items-center bg-gray-950 p-1 rounded-xl border border-gray-800 mt-4 w-full max-w-[280px]">
                 <button 
                   onClick={() => setTriadMode(false)}
